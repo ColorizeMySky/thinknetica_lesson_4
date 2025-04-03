@@ -1,10 +1,10 @@
 class Train
-  attr_reader :number, :type, :wagons, :route, :current_station_index, :speed
+  attr_reader :number,  :wagons, :type, :route,:current_station_index, :speed
 
-  def initialize(number, type, wagons)
+  def initialize(number, type)
     @number = number
     @type = type
-    @wagons = wagons
+    @wagons = []
     @speed = 0
     @route = nil
     @current_station_index = nil
@@ -26,12 +26,12 @@ class Train
     self.speed = [self.speed - speed, 0].max unless stopped?
   end
 
-  def add_wagon
-    self.wagons += 1 if stopped?
+  def add_wagon(wagon)
+    self.wagons << wagon if stopped?
   end
 
-  def remove_wagon
-    self.wagons -= 1 if stopped? && has_wagons?
+  def remove_wagon(wagon)
+    self.wagons.delete(wagon) if stopped?
   end
 
   def assign_route(route)
@@ -66,10 +66,6 @@ class Train
   attr_writer :speed, :wagons, :route, :current_station_index
 
   # в спецификации не требуется доступ к этим методам, это внутренная логика
-  def has_wagons?
-    self.wagons > 0
-  end
-
   def has_route?
     self.route
   end
@@ -79,7 +75,7 @@ class Train
   end
 
   def first_station?
-    has_route? && self.current_station_index > 0
+    has_route? && self.current_station_index == 0
   end
 
   def move_to(type)
