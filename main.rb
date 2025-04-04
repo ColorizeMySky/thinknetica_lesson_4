@@ -4,8 +4,11 @@ require_relative 'cargo_train'
 require_relative 'station'
 require_relative 'route'
 require_relative 'wagon'
+require_relative 'menu_config'
 
 class Main
+  MENU = MENU_CONFIG
+
   def initialize
     @stations = []
     @trains = []
@@ -13,51 +16,44 @@ class Main
     @wagons = []
   end
 
-  def menu
+  def start
     loop do
-      puts "1. Создать станцию"
-      puts "2. Создать поезд"
-      puts "3. Создать маршрут"
-      puts "4. Добавить станцию в маршрут"
-      puts "5. Удалить станцию из маршрута"
-      puts "6. Назначить маршрут поезду"
-      puts "7. Добавить вагон к поезду"
-      puts "8. Отцепить вагон от поезда"
-      puts "9. Переместить поезд по маршруту"
-      puts "10. Просмотреть список станций и поездов"
-      puts "0. Выход"
-      print "Выберите действие: "
-      choice = gets.chomp.to_i
-
-      case choice
-      when 1 then create_station
-      when 2 then create_train
-      when 3 then create_route
-      when 4 then add_station_to_route
-      when 5 then remove_station_from_route
-      when 6 then assign_route_to_train
-      when 7 then add_wagon_to_train
-      when 8 then remove_wagon_from_train
-      when 9 then move_train
-      when 10 then show_info
-      when 0 then break
-      else puts "Неверный выбор, попробуйте снова"
-      end
+      show_menu
+      choice = get_choice
+      take_action(choice)
     end
   end
 
   private
 
+  def show_menu
+    MENU.each { |item| puts "#{item[:id]}. #{item[:title]}" }
+  end
+
+  def get_choice
+    puts "Выберите действие: "
+    gets.chomp.to_i
+  end
+
+  def take_action(choice)
+    item = MENU.find { |menu_item| menu_item[:id] == choice }
+    send(item[:action]) if item
+  end
+
+  def exit_interface
+    exit
+  end
+
   def create_station
-    print "Введите название станции: "
+    puts "Введите название станции: "
     name = gets.chomp
     @stations << Station.new(name)
   end
 
   def create_train
-    print "Введите номер поезда: "
+    puts "Введите номер поезда: "
     number = gets.chomp
-    print "Выберите тип (1 - пассажирский, 2 - грузовой): "
+    puts "Выберите тип (1 - пассажирский, 2 - грузовой): "
     type = gets.chomp.to_i
 
     if(type == 1)
@@ -70,9 +66,9 @@ class Main
   end
 
   def create_route
-    print "Введите номер начальной станции: "
+    puts "Введите номер начальной станции: "
     first_index = gets.chomp.to_i - 1
-    print "Введите номер конечной станции: "
+    puts "Введите номер конечной станции: "
     last_index = gets.chomp.to_i - 1
 
     route = Route.new(@stations[first_index], @stations[last_index])
@@ -80,38 +76,38 @@ class Main
   end
 
   def add_station_to_route
-    select_route
-    print "Введите номер станции для добавления: "
+    select_entity(@routes)
+    puts "Введите номер станции для добавления: "
     station_index = gets.chomp.to_i - 1
-    print "Введите позицию (по умолчанию предпоследняя): "
+    puts "Введите позицию (по умолчанию предпоследняя): "
     position = gets.chomp.to_i
 
     @selected_route.add_station(@stations[station_index], position)
   end
 
   def remove_station_from_route
-    select_route
-    print "Введите номер станции для удаления: "
+    select_entity(@routes)
+    puts "Введите номер станции для удаления: "
     station_index = gets.chomp.to_i - 1
 
     @selected_route.remove_station(@selected_route.stations[station_index])
   end
 
   def assign_route_to_train
-    select_train
-    select_route
+    select_entity(@trains)
+    select_entity(@routes)
     @selected_train.assign_route(@selected_route)
   end
 
   def add_wagon_to_train
-    select_train
+    select_entity(@trains)
     wagon = Wagon.new(@selected_train.type)
     @selected_train.add_wagon(wagon)
     @wagons << wagon
   end
 
   def remove_wagon_from_train
-    select_train
+    select_entity(@trains)
     return if @selected_train.wagons.empty?
 
     wagon = @selected_train.wagons.last
@@ -119,8 +115,8 @@ class Main
   end
 
   def move_train
-    select_train
-    print "Выберите направление (1 - вперед, 2 - назад): "
+    select_entity(@trains)
+    puts "Выберите направление (1 - вперед, 2 - назад): "
     direction = gets.chomp.to_i
 
     if(direction == 1)
@@ -143,15 +139,16 @@ class Main
     end
   end
 
-  def select_train
-    print "Выберите поезд: "
-    train_index = gets.chomp.to_i - 1
-    @selected_train = @trains[train_index]
-  end
-
-  def select_route
-    print "Выберите маршрут: "
-    route_index = gets.chomp.to_i - 1
-    @selected_route = @routes[route_index]
+  def select_entity(collection)
+    case collection
+    when @stations
+      puts "Выберите станцию: "
+    when @trains
+      puts "Выберите поезд: "
+    when @routes
+      puts "Выберите маршрут: "
+    end
+    entity_index = gets.chomp.to_i - 1
+    @selected_entity = collection[entity_index]
   end
 end
